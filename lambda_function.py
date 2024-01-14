@@ -35,7 +35,7 @@ def lambda_handler(event,context):
         print(e)
         print('Error getting object {key} from bucket {bucket}. Make sure that these exist and that the bucket is in the same region as the Lambda function')
         raise e
-
+#todo create single file output
 # for single file output
 #  output_s3_uri = f"s3://{os_input_s3_cleansed_layer}/{os_input_glue_catalog_table_name}/output.parquet"
 #     wr.s3.to_parquet(df, output_s3_uri, index=False)
