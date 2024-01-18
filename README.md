@@ -77,9 +77,23 @@ If the job gives you a not found error, then you want to check a few things:
 4. As always, check that you are working in the correct region
 5. Make sure you save changes you make to the job before running it
 
+In an intermediate step, we convert the dynamic frame to a Spark DataFrame so that we can use some Spark operations and functionalities. In particular, we reduce the number of partitions in the source data to 1 using the coalesce method.
+
 ## ETL Job using PySpark - Encoding
 
 Since we are working with the data from around the world, some of it is not in the standard English character set. So, ideally, we want to ensure that the encoding settings are correct before we transform and ingest the data. Initially, we only extract data that from Canada, Great Britain, and the United States because this will allow us to avoid the encoding issues. We do this by adding a pushdown predicate option to the extraction logic. A pushdown predicate allows us to filter on partitions without having to list and read all the files in your dataset Once done, we test the pipeline and once we are happy that it is working, we started adding logic to deal with the encoding.
+
+## Lambda Triggers
+
+Next, we go back to our Lambda function that we created to bring in the raw reference data. We are adding a trigger that will invoke the Lambda function whenever JSON data is uploaded to the specified s3 location. Since our Lambda function was created to transform and load data into the clean bucket, this is precisely what it will do once it is triggered. This could be someone deleting files, adding files, copying files, and a number of other things which can be configured more precisely. In the trigger wizard, we add the key to the prefix textbox. And then in the suffix, we add the JSON file extension - .json.
+
+## Analytics Bucket and Database
+
+Now that we have good quality data in the clean layer, we are moving further by creating a reporting layer. We go back to AWS Glue and create another job that will be responsible for transforming the data even further. Although we used a Lambda job and Glue ETL job to transform the 2 sets of data between the raw and clean layer, this time we are using one ETL job to transform the data to the reporting layer. This is because we want to join the data to create one unified dataset upstream to reduce query costs and improve accuracy downstream. Using the Visual ETL tool, we create a join node along with a target node that outputs the data in an analytics bucket. While uploading the data to s3, we also want to create a table in our data catalog. For the database table, we are adding two partition keys - the region and the category id. We also can't forget to assign the relevant role to the resource - in our case, the same glue role we have been using throughout.
+
+## QuickSight
+
+The final step in the process is to visualise our data. We will be using AWS QuickSight and the first thing we need to do is create a _standard_ QuickSight account if we don't yet have one. Once that is created, we need to give QuickSight access to the data that we will use to build our dashboards. We navigate to the 'Manage Quicksight' option and go to the 'Security and permissions' page. We can now create a data source using the Athena data that is in our analytics layer. Finally, we create a QuickSight Analysis and we can start producing all the answers to our burning questions.
 
 ## Tips
 
@@ -90,3 +104,16 @@ Since we are working with the data from around the world, some of it is not in t
 
 1. How do bookmarks work in PySpark?
 2. How do we control how many files, post-tranformation or processing, various uses create? Focus on Lambda and PySpark/Glue ETL.
+3. How do we (effectively) move data from S3 to a database?
+4. How serious is this warning when creating a Lambda function: "using the same S3 bucket for both input and output is not recommended and that this configuration can cause recursive invocations, increased Lambda usage, and increased costs."?
+5. Once we
+
+## Tools
+
+Glue ETL, S3, Glue Data Catalog, Python, PySpark,
+
+## todo
+
+- add data quality rules/transformations on the data as it goes into clean/reporting
+- fix the encoding issue i.e. find a way to remove push down predicate
+- create ETL diagram
